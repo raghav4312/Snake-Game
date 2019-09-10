@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title></title>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    body { background: black; display: flex; align-items: center; justify-content: center; flex-direction: column}
+    p{text-align: center;color:white;font-size:30px;}
+    canvas { border: 1px solid white; }
+    #display p{
+      float: left;
+      margin: 20px;
+    }
+    #display::after
+    {
+      clear: both;
+    }
+  </style>
+</head>
+<body>
+  <div id="display"><p id="displayScore">Score : 0</p><p id="dispHighScore">High Score : 0</p>
+  </div>
+<canvas width="400" height="400" id="game"></canvas>
+<p>Press P to Pause the game<br>Press R to Resume the game</p>
+
+<script>
+var canvas = document.getElementById('game');
+var context = canvas.getContext('2d');
+var grid = 16;
+var highScore = 0,score=0;
+var direction,newDirection,pausedDirec;
+var displayScore = document.getElementById("displayScore");
+var dispHighScore = document.getElementById('dispHighScore');
+var loop,isLoop=0,biteItself=0;
+var snake = {
+  x : 160,
+  y : 160 ,
+ cells : [{x:160 , y:160} , {x:144 , y:160} , {x:128 , y:160}] ,
+};
+
+var apple = {
+  x: 320,
+  y: 320,
+};
+
+window.addEventListener('load',getFromLocalStorage);
+
+function getFromLocalStorage()
+{
+  if(!localStorage.highScore)
+  localStorage.highScore=score;
+  else
+  {
+    highScore=localStorage.highScore;
+  }
+  if(localStorage.snake)
+  {
+    snake=JSON.parse(localStorage.getItem("snake"));
+    drawSnake();  
+
+  }
+  else
+  {
+    snake={
+      x : 160,
+      y : 160 ,
+      cells : [{x:160 , y:160} , {x:144 , y:160},{x:128 , y:160}] ,
+    }
+    localStorage.setItem('snake',JSON.stringify(snake));
+    drawSnake();  
+
+  }
+
+  if(localStorage.apple)
+  {
+    apple=JSON.parse(localStorage.getItem('apple'));
+    drawApple();
+
+  }
+  else
+  {
+    apple={
+      x : 320,
+      y : 320,
+    }
+    localStorage.setItem('apple',JSON.stringify(apple));
+    drawApple();
+
+  }
+  if(!localStorage.score)
+  {
+    score=0;
+    localStorage.score=0;
+    
+  }
+  else
+  {
+    score=localStorage.score;
+    updateScore();
+  }
+
+  if(!localStorage.direction)
+  {
+    direction="";
+    localStorage.direction="";
+  }
+  else
+  {
+    direction=localStorage.direction;
+  }
+
+}
+function resetLocalStorage()
+{
+  snake={
+      x : 160,
+      y : 160 ,
+      cells : [{x:160 , y:160} , {x:144 , y:160}, {x:128, y:160}] ,
+    }
+    localStorage.setItem('snake',JSON.stringify(snake));
+
+    apple={
+      x : 320,
+      y : 320,
+    }
+    localStorage.setItem('apple',JSON.stringify(apple));
+
+    if(localStorage.highScore<score)
+    localStorage.highScore=score;
+    score=0;
+    localStorage.score=0;
+    direction="";
+    localStorage.direction="";
+}
+function updateLocalStorage()
+{
+  localStorage.setItem('snake',JSON.stringify(snake));
+  localStorage.setItem('apple',JSON.stringify(apple));
+  localStorage.score=score;
+  if(localStorage.highScore<score)
+  localStorage.highScore=score;
+  localStorage.direction=direction;
+}
+
+window.addEventListener('beforeunload',updateLocalStorage);
+
+// draw apple
+function drawApple()
+{
+  context.fillStyle = 'red';
+  context.fillRect(apple.x, apple.y, grid-1, grid-1); 
+}
+
+function removeApple()
+{
+  context.fillStyle = 'black';
+  context.fillRect(apple.x, apple.y, grid-1, grid-1); 
+}
+
+// draw snake
+function drawSnake()
+{
+  context.fillStyle = 'yellow';
+  context.fillRect(snake.cells[0].x, snake.cells[0].y, grid, grid);
+  context.fillStyle = 'green';
+  for(let i=1 ; i<snake.cells.length ; i++)
+    context.fillRect(snake.cells[i].x, snake.cells[i].y, grid, grid);
+}
+
+function  getApplePosition()
+{
+  apple.x = Math.floor(Math.random()*25)*16;
+  apple.y = Math.floor(Math.random()*25)*16;
+  for(var i=0;i<snake.cells.length;i++)
+  {
+    if(apple.x==snake.cells[i].x&&apple.y==snake.cells[i].y)
+    {
+      getApplePosition();
+    }
+  }
+}
+
+function checkCollision()
+{
+  if(snake.x==0-grid||snake.x==400||snake.y==0-grid||snake.y==400)
+  {
+    
+    alert("Game over your cobra just died lmao");
+    resetLocalStorage();
+    clearInterval(loop);
+    window.location.reload();
+  }
+  else{
+  for(var i=1;i<snake.cells.length&&biteItself==0;i++)
+  {
+    if(snake.x==snake.cells[i].x && snake.y==snake.cells[i].y)
+    {
+      alert("Your cobra bit itself");
+      biteItself=1;
+      resetLocalStorage();
+      clearInterval(loop);
+      window.location.reload();
+    }
+  }
+  }
+}
+
+function updateScore()
+{
+  displayScore.innerHTML="Score : "+score;
+  dispHighScore.innerHTML="High Score : "+highScore;
+}
+
+function moveSnake( dx , dy)
+{
+  snake.x += dx ;
+  snake.y += dy ;
+  snake.cells.unshift({x: snake.x , y: snake.y}) ; // Insert at 0th position
+
+  checkCollision();
+  if(snake.cells[0].x==apple.x&&snake.cells[0].y==apple.y)
+  {
+    removeApple();
+    getApplePosition();
+    drawApple();
+    score++;
+    if(highScore<score)
+    highScore++;
+    updateScore();
+  }
+  else
+  {
+    snake.cells.pop();  // remove the last element
+  }
+  console.log(direction);
+
+  drawSnake();
+}
+document.addEventListener("keydown", function(e) 
+{
+  if(e.keyCode==37||e.keyCode == 38||e.keyCode == 39||e.keyCode == 40){
+    // if(isPaused)
+    if(e.keyCode==37&&direction!='right'&&(direction!='left'||isPaused==1))
+    {
+      newDirection='left';
+      if(loop==0)
+      direction=newDirection;
+      if(isLoop==1)
+      clearInterval(loop);
+      loop= setInterval(()=>{isLoop=1;directSnake(newDirection,direction)},75);
+    }
+    else if(e.keyCode==38&&direction!='down'&&(direction!='up'||isPaused==1))
+    {
+      newDirection='up';
+      if(loop==0)
+      direction=newDirection;
+      if(isLoop==1)
+      clearInterval(loop);
+      loop= setInterval(()=>{isLoop=1;directSnake(newDirection,direction)},75);
+    }
+    else if(e.keyCode==39&&direction!='left'&&(direction!='right'||isPaused==1))
+    {
+      newDirection='right';
+      if(loop==0)
+      direction=newDirection;
+      if(isLoop==1)
+      clearInterval(loop);
+      loop= setInterval(()=>{isLoop=1;directSnake(newDirection,direction)},75);
+    }
+    else if(e.keyCode==40&&direction!='up'&&(direction!='down'||isPaused==1))
+    {
+      newDirection='down';
+      if(loop==0)
+      direction=newDirection;
+      if(isLoop==1)
+      clearInterval(loop);
+      loop= setInterval(()=>{isLoop=1;directSnake(newDirection,direction)},75);
+    }
+    
+  }
+  else if(e.keyCode==80)
+  {
+    clearInterval(loop);
+    isLoop=0;
+    isPaused=1;
+    updateLocalStorage();
+    pausedDirec = direction;
+    // direction="";
+  }
+  else if(e.keyCode == 82)
+  {
+    isPaused=0;
+    if(isLoop==1)
+      clearInterval(loop);
+    loop= setInterval(()=>{isLoop=1;directSnake(pausedDirec,pausedDirec)},75);
+  }
+
+});
+
+function directSnake(newDir,dir){
+  let dx , dy ;
+  // left arrow key
+  if (newDir == 'left' && dir!="right") 
+  {
+    dx = -grid;
+    dy = 0;
+    direction="left"; 
+    context.clearRect(0, 0, canvas.width,canvas.height);// Clear the Canvas
+    moveSnake(dx,dy);
+    drawApple();
+  }
+   // up arrow key
+  else if (newDir == 'up' && dir!="down") 
+  {
+    dy = -grid;
+    dx = 0;
+    direction="up"; 
+    context.clearRect(0, 0, canvas.width,canvas.height);// Clear the Canvas
+    moveSnake(dx,dy);
+    drawApple();
+  }
+   // right arrow key
+  else if (newDir == 'right' && dir!="left") 
+  {
+    dx = grid;
+    dy = 0;
+    direction="right"; 
+    context.clearRect(0, 0, canvas.width,canvas.height);// Clear the Canvas
+    moveSnake(dx,dy);
+    drawApple();
+
+  }
+   // down arrow key
+  else if (newDir =='down' && dir!="up") 
+  {
+    dy = grid;
+    dx = 0;
+    direction="down"; 
+    context.clearRect(0, 0, canvas.width,canvas.height);// Clear the Canvas
+    moveSnake(dx,dy);
+    drawApple();
+  }
+  else
+  {
+    clearInterval(loop);
+    loop= setInterval(()=>{isLoop=1;directSnake(direction,direction)},75);
+  }
+}
+// listen to keyboard events to move the snake
+/*
+document.addEventListener('keydown', function(e) 
+{
+  let dx , dy ;
+  // left arrow key
+  if(e.keyCode==37||e.keyCode == 38||e.keyCode == 39||e.keyCode == 40){
+  if (e.keyCode == 37 && direction!="right") 
+  {
+    dx = -grid;
+    dy = 0;
+    direction="left"; 
+    context.clearRect(0, 0, canvas.width,canvas.height);// Clear the Canvas
+    moveSnake(dx,dy);
+    drawApple();
+  }
+   // up arrow key
+  else if (e.keyCode == 38 && direction!="down") 
+  {
+    dy = -grid;
+    dx = 0;
+    direction="up"; 
+    context.clearRect(0, 0, canvas.width,canvas.height);// Clear the Canvas
+    moveSnake(dx,dy);
+    drawApple();
+  }
+   // right arrow key
+  else if (e.keyCode == 39 && direction!="left") 
+  {
+    dx = grid;
+    dy = 0;
+    direction="right"; 
+    context.clearRect(0, 0, canvas.width,canvas.height);// Clear the Canvas
+    moveSnake(dx,dy);
+    drawApple();
+
+  }
+   // down arrow key
+  else if (e.keyCode == 40 && direction!="up") 
+  {
+    dy = grid;
+    dx = 0;
+    direction="down"; 
+    context.clearRect(0, 0, canvas.width,canvas.height);// Clear the Canvas
+    moveSnake(dx,dy);
+    drawApple();
+  }
+}
+});*/
+</script>
+</body>
+</html>
