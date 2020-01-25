@@ -28,10 +28,11 @@ var canvas = document.getElementById('game');
 var context = canvas.getContext('2d');
 var grid = 16;
 var highScore = 0,score=0;
-var direction,newDirection,pausedDirec;
+var direction='right',newDirection,pausedDirec="";
 var displayScore = document.getElementById("displayScore");
 var dispHighScore = document.getElementById('dispHighScore');
-var loop,isLoop=0,biteItself=0;
+var loop,isLoop=0,biteItself=0,isPaused=1;
+console.log(direction);
 var snake = {
   x : 160,
   y : 160 ,
@@ -101,8 +102,8 @@ function getFromLocalStorage()
 
   if(!localStorage.direction)
   {
-    direction="";
-    localStorage.direction="";
+    direction="right";
+    localStorage.direction="right";
   }
   else
   {
@@ -129,8 +130,8 @@ function resetLocalStorage()
     localStorage.highScore=score;
     score=0;
     localStorage.score=0;
-    direction="";
-    localStorage.direction="";
+    direction="right";
+    localStorage.direction="right";
 }
 function updateLocalStorage()
 {
@@ -216,7 +217,8 @@ function moveSnake( dx , dy)
   snake.x += dx ;
   snake.y += dy ;
   snake.cells.unshift({x: snake.x , y: snake.y}) ; // Insert at 0th position
-
+  pausedDirec = direction;
+  isPaused=0;
   checkCollision();
   if(snake.cells[0].x==apple.x&&snake.cells[0].y==apple.y)
   {
@@ -240,8 +242,10 @@ document.addEventListener("keydown", function(e)
 {
   if(e.keyCode==37||e.keyCode == 38||e.keyCode == 39||e.keyCode == 40){
     // if(isPaused)
+    //left arrow key
     if(e.keyCode==37&&direction!='right'&&(direction!='left'||isPaused==1))
     {
+      console.log(direction);
       newDirection='left';
       if(loop==0)
       direction=newDirection;
@@ -249,6 +253,7 @@ document.addEventListener("keydown", function(e)
       clearInterval(loop);
       loop= setInterval(()=>{isLoop=1;directSnake(newDirection,direction)},75);
     }
+    //up arrow key
     else if(e.keyCode==38&&direction!='down'&&(direction!='up'||isPaused==1))
     {
       newDirection='up';
@@ -258,6 +263,7 @@ document.addEventListener("keydown", function(e)
       clearInterval(loop);
       loop= setInterval(()=>{isLoop=1;directSnake(newDirection,direction)},75);
     }
+    //right arrow key
     else if(e.keyCode==39&&direction!='left'&&(direction!='right'||isPaused==1))
     {
       newDirection='right';
@@ -267,6 +273,7 @@ document.addEventListener("keydown", function(e)
       clearInterval(loop);
       loop= setInterval(()=>{isLoop=1;directSnake(newDirection,direction)},75);
     }
+    //down arrow key
     else if(e.keyCode==40&&direction!='up'&&(direction!='down'||isPaused==1))
     {
       newDirection='down';
@@ -278,21 +285,28 @@ document.addEventListener("keydown", function(e)
     }
     
   }
+  // p key
   else if(e.keyCode==80)
   {
-    clearInterval(loop);
-    isLoop=0;
-    isPaused=1;
-    updateLocalStorage();
-    pausedDirec = direction;
-    // direction="";
+    if(!(pausedDirec==""&&direction=='right')){
+      clearInterval(loop);
+      isLoop=0;
+      isPaused=1;
+      updateLocalStorage();
+      pausedDirec = direction;
+      // direction="right";
+    }
   }
+  // r key
   else if(e.keyCode == 82)
   {
-    isPaused=0;
-    if(isLoop==1)
-      clearInterval(loop);
-    loop= setInterval(()=>{isLoop=1;directSnake(pausedDirec,pausedDirec)},75);
+
+    // if(isLoop==1)
+    //   clearInterval(loop);
+    if(isLoop==0&&pausedDirec!=""&&isPaused==1){
+      isPaused=0;
+      loop= setInterval(()=>{isLoop=1;directSnake(pausedDirec,pausedDirec)},75);
+    }
   }
 
 });
@@ -346,55 +360,6 @@ function directSnake(newDir,dir){
     loop= setInterval(()=>{isLoop=1;directSnake(direction,direction)},75);
   }
 }
-// listen to keyboard events to move the snake
-/*
-document.addEventListener('keydown', function(e) 
-{
-  let dx , dy ;
-  // left arrow key
-  if(e.keyCode==37||e.keyCode == 38||e.keyCode == 39||e.keyCode == 40){
-  if (e.keyCode == 37 && direction!="right") 
-  {
-    dx = -grid;
-    dy = 0;
-    direction="left"; 
-    context.clearRect(0, 0, canvas.width,canvas.height);// Clear the Canvas
-    moveSnake(dx,dy);
-    drawApple();
-  }
-   // up arrow key
-  else if (e.keyCode == 38 && direction!="down") 
-  {
-    dy = -grid;
-    dx = 0;
-    direction="up"; 
-    context.clearRect(0, 0, canvas.width,canvas.height);// Clear the Canvas
-    moveSnake(dx,dy);
-    drawApple();
-  }
-   // right arrow key
-  else if (e.keyCode == 39 && direction!="left") 
-  {
-    dx = grid;
-    dy = 0;
-    direction="right"; 
-    context.clearRect(0, 0, canvas.width,canvas.height);// Clear the Canvas
-    moveSnake(dx,dy);
-    drawApple();
-
-  }
-   // down arrow key
-  else if (e.keyCode == 40 && direction!="up") 
-  {
-    dy = grid;
-    dx = 0;
-    direction="down"; 
-    context.clearRect(0, 0, canvas.width,canvas.height);// Clear the Canvas
-    moveSnake(dx,dy);
-    drawApple();
-  }
-}
-});*/
 </script>
 </body>
 </html>
